@@ -1,16 +1,21 @@
 import pygame, sys
+from player import Player
 
 class Game:
     def __init__(self):
+        player_sprite = Player((screen_width/2, screen_height))
+        self.player = pygame.sprite.GroupSingle(player_sprite)
         pass
     def run(self):
+        self.player.update()
+        self.player.draw(screen)
         pass
         # Just like in love you should do updates first then a draw afterwards
 
 if __name__ == "__main__": # this basically tells you if the code thats running is being imported or not
     pygame.init()
     screen_width = 600
-    screen_height = 400
+    screen_height = 600
     screen = pygame.display.set_mode((screen_width, screen_height))
     clock = pygame.time.Clock()
     game = Game()
