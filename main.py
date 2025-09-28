@@ -21,8 +21,7 @@ class Game:
 				orig_update(group_self, *args, **kwargs)
 		self.player.sprite.lasers.update = patched_update.__get__(self.player.sprite.lasers)
 	def __init__(self):
-		self.round_transition = False  # Start with gameplay, not upgrade selection
-		self.round_countdown = 0
+		self.round_transition = False  
 		self.round_number = 1
 		self.show_round_screen = False
 		self.round_screen_timer = 0
@@ -56,7 +55,7 @@ class Game:
 		self.upgrade_cards = []
 		self.selected_upgrade = None
 
-		self.bullet_pierce = 1  # Default: bullets hit 1 alien
+		self.bullet_pierce = 1  
 
 		# music = pygame.mixer.Sound('music.wav') -- i'm not sure we can use the music they made
 		# music.set_volume(0.2)
@@ -119,17 +118,14 @@ class Game:
 			self.extra_spawn_time = randint(400,800)
 
 	def collision_checks(self):
-		# Player lasers
 		if self.player.sprite.lasers:
 			for laser in self.player.sprite.lasers:
-				# Always set pierce_count and spawn_time for every laser, every frame
 				if not hasattr(laser, 'pierce_count') or laser.pierce_count is None:
 					laser.pierce_count = 0
 				if not hasattr(laser, 'spawn_time') or laser.spawn_time is None:
 					laser.spawn_time = pygame.time.get_ticks()
 				if pygame.sprite.spritecollide(laser, self.blocks, True):
 					laser.kill()
-				# Alien collision with piercing logic
 				aliens_hit = pygame.sprite.spritecollide(laser, self.aliens, True)
 				if aliens_hit:
 					for alien in aliens_hit:
@@ -142,7 +138,6 @@ class Game:
 				elif pygame.sprite.spritecollide(laser, self.extra, True):
 					self.score += 500
 					laser.kill()
-				# For Upgrade 1: despawn after 8 seconds if not already killed
 				if self.bullet_pierce == 2 and hasattr(laser, 'spawn_time'):
 					if pygame.time.get_ticks() - laser.spawn_time > 8000:
 						laser.kill()
@@ -184,10 +179,9 @@ class Game:
 		screen.blit(score_surf, score_rect)
 
 	def victory_message(self):
-		# Only trigger after round 1 and later
 		if not self.aliens.sprites() and not self.round_transition and not self.show_round_screen:
 			if not hasattr(self, 'wave_passed_timer') or self.wave_passed_timer is None:
-				self.wave_passed_timer = 5 * 60  # 5 seconds at 60 FPS
+				self.wave_passed_timer = 5 * 60 
 			if self.wave_passed_timer > 0:
 				wave_surf = self.font.render('Wave Passed', False, 'white')
 				wave_rect = wave_surf.get_rect(center=(screen_width / 2, screen_height / 2))
@@ -199,8 +193,8 @@ class Game:
 				self.upgrade_cards = get_random_upgrades(3)
 				self.selected_upgrade = None
 	def draw_upgrade_cards(self):
-		card_width = 340  # Increased width
-		card_height = 170  # Increased height
+		card_width = 340  
+		card_height = 170  
 		spacing = 60
 		total_width = 3 * card_width + 2 * spacing
 		start_x = (screen_width - total_width) // 2
@@ -214,6 +208,7 @@ class Game:
 		screen.blit(round_surf, (screen_width // 2 - round_surf.get_width() // 2, screen_height // 2 - round_surf.get_height() // 2))
 
 	def run(self):
+		# Player handles its own firing logic (cooldown/ready)
 		if self.round_transition:
 			screen.fill((20, 20, 40))
 			self.draw_upgrade_cards()
@@ -301,7 +296,7 @@ if __name__ == '__main__':
 				sys.exit()
 			if event.type == ALIENLASER:
 				game.alien_shoot()
-			# Handle upgrade card click
+			
 			if game.round_transition and event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
 				mouse_x, mouse_y = event.pos
 				card_width = 340
@@ -315,22 +310,29 @@ if __name__ == '__main__':
 					rect = pygame.Rect(x, y, card_width, card_height)
 					if rect.collidepoint(mouse_x, mouse_y):
 						game.selected_upgrade = card
-						# Apply Upgrade 1 effect if selected (match by description substring)
+						
 						if 'lasers capable of hitting 2 aliens' in card.name:
 							if game.lives > 1:
 								game.lives -= 1
 							game.bullet_pierce = 2
+							game.player.sprite.laser_cooldown = 600
+						elif 'fire your lasers faster' in card.name:
+							if game.lives > 1:
+								game.lives -= 1
+							game.player.sprite.laser_cooldown = 300  # 50% faster
+							game.bullet_pierce = 1
 						else:
 							game.bullet_pierce = 1
+							game.player.sprite.laser_cooldown = 600
 						game.reset_laser_pierce()
-						# Redraw immediately to show lost life
+						
 						screen.fill((30,30,30))
 						game.run()
 						crt.draw()
 						pygame.display.flip()
 						game.round_transition = False
 						game.show_round_screen = True
-						game.round_screen_timer = 2 * 60  # 2 seconds
+						game.round_screen_timer = 2 * 60  
 						game.round_number += 1
 						break
 

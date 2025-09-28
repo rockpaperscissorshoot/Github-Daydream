@@ -2,6 +2,8 @@ import pygame
 from laser import Laser
 
 class Player(pygame.sprite.Sprite):
+	def shoot(self):
+		self.lasers.add(Laser(self.rect.center, -8, self.rect.bottom))
 	def __init__(self,pos,constraint,speed):
 		super().__init__()
 		self.image = pygame.image.load('player.png').convert_alpha()

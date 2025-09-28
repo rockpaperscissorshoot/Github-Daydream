@@ -2,7 +2,9 @@ import random
 import pygame
 
 UPGRADE_LIST = [
-    'Sacrifice 1 life to make your lasers capable of hitting 2 aliens', 'Upgrade 2', 'Upgrade 3', 'Upgrade 4',
+    'Sacrifice 1 life to make your lasers capable of hitting 2 aliens',
+    'Sacrifice 1 life to fire your lasers faster',
+    'Upgrade 3', 'Upgrade 4',
     'Upgrade 5'
 ]
 
