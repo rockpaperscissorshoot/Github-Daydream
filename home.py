@@ -7,11 +7,16 @@ from laser import Laser
  
 class Game:
 	def __init__(self):
-		
+		self.round_transition = False
+		self.round_countdown = 0
+		self.round_number = 1
+		self.show_round_screen = False
+		self.round_screen_timer = 0
+		self.alien_speed = 1
+
 		player_sprite = Player((screen_width / 2, screen_height), screen_width, 5)
 		self.player = pygame.sprite.GroupSingle(player_sprite)
 
-		
 		self.lives = 3
 		self.live_surf = pygame.image.load('player.png').convert_alpha()
 		self.live_x_start_pos = screen_width - (self.live_surf.get_size()[0] * 2 + 20)
@@ -155,31 +160,81 @@ class Game:
 		screen.blit(score_surf, score_rect)
 
 	def victory_message(self):
-		if not self.aliens.sprites():
-			victory_surf = self.font.render('You won', False, 'white')
-			victory_rect = victory_surf.get_rect(center = (screen_width / 2, screen_height / 2))
-			screen.blit(victory_surf, victory_rect)
+		if not self.aliens.sprites() and not self.round_transition and not self.show_round_screen:
+			if not hasattr(self, 'wave_passed_timer') or self.wave_passed_timer is None:
+				self.wave_passed_timer = 5 * 60  # 5 seconds at 60 FPS
+			if self.wave_passed_timer > 0:
+				wave_surf = self.font.render('Wave Passed', False, 'white')
+				wave_rect = wave_surf.get_rect(center=(screen_width / 2, screen_height / 2))
+				screen.blit(wave_surf, wave_rect)
+				self.wave_passed_timer -= 1
+			else:
+				self.wave_passed_timer = None
+				self.round_transition = True
+				self.round_countdown = 30 * 60  # 30 seconds at 60 FPS
+	def draw_countdown(self):
+		seconds = self.round_countdown // 60
+		countdown_surf = self.font.render(f'{seconds}', True, 'white')
+		screen.blit(countdown_surf, (screen_width - countdown_surf.get_width() - 20, 20))
+
+	def draw_round_screen(self):
+		round_surf = self.font.render(f'Round {self.round_number}', True, 'yellow')
+		screen.blit(round_surf, (screen_width // 2 - round_surf.get_width() // 2, screen_height // 2 - round_surf.get_height() // 2))
 
 	def run(self):
-		if not self.game_over and self.aliens:
+		if self.round_transition:
+			screen.fill((0, 0, 0))
+			self.draw_countdown()
+			self.round_countdown -= 1
+			if self.round_countdown <= 0:
+				self.round_transition = False
+				self.show_round_screen = True
+				self.round_screen_timer = 120  
+				self.round_number += 1
+		elif self.show_round_screen:
+			screen.fill((0, 0, 0))
+			self.draw_round_screen()
+			self.round_screen_timer -= 1
+			if self.round_screen_timer <= 0:
+				self.show_round_screen = False
+				# Increase alien speed after first round
+				if self.round_number > 1:
+					self.alien_speed += 40
+				self.aliens.empty()
+				self.alien_lasers.empty()
+				self.blocks.empty()
+				self.alien_setup(rows=6, cols=8)
+				self.create_multiple_obstacles(*self.obstacle_x_positions, x_start=screen_width / 15, y_start=480)
+		elif not self.game_over and self.aliens:
 			self.player.update()
 			self.alien_lasers.update()
 			self.extra.update()
-			self.aliens.update(self.alien_direction)
+			self.aliens.update(self.alien_direction * self.alien_speed)
 			self.alien_position_checker()
 			self.extra_alien_timer()
 			self.collision_checks()
 
-		self.player.sprite.lasers.draw(screen)
-		self.player.draw(screen)
-		self.blocks.draw(screen)
-		self.aliens.draw(screen)
-		self.alien_lasers.draw(screen)
-		self.extra.draw(screen)
-		self.display_lives()
-		self.display_score()
-		self.victory_message()
-		self.game_over_message()
+			self.player.sprite.lasers.draw(screen)
+			self.player.draw(screen)
+			self.blocks.draw(screen)
+			self.aliens.draw(screen)
+			self.alien_lasers.draw(screen)
+			self.extra.draw(screen)
+			self.display_lives()
+			self.display_score()
+			self.victory_message()
+			self.game_over_message()
+		else:
+			self.player.sprite.lasers.draw(screen)
+			self.player.draw(screen)
+			self.blocks.draw(screen)
+			self.aliens.draw(screen)
+			self.alien_lasers.draw(screen)
+			self.extra.draw(screen)
+			self.display_lives()
+			self.display_score()
+			self.victory_message()
+			self.game_over_message()
 
 class CRT:
 	def __init__(self):
