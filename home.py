@@ -17,7 +17,7 @@ class Game:
 		player_sprite = Player((screen_width / 2, screen_height), screen_width, 5)
 		self.player = pygame.sprite.GroupSingle(player_sprite)
 
-		self.lives = 3
+		self.lives = 4
 		self.live_surf = pygame.image.load('player.png').convert_alpha()
 		self.live_x_start_pos = screen_width - (self.live_surf.get_size()[0] * 2 + 20)
 		self.score = 0
