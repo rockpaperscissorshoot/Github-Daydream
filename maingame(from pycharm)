@@ -748,3 +748,5 @@ while running:
 
     pygame.display.update()
 
+
+# *code was used from a past project and changed a bit as well*
