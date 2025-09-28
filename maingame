@@ -1,0 +1,750 @@
+
+
+import pygame
+import random
+import math
+
+#pygame here
+pygame.init()
+
+# create the screen
+screen = pygame.display.set_mode((800, 600))
+
+#  icon + title
+pygame.display.set_caption("Rainforest Mosquito Invadors")
+icon = pygame.image.load('mosquito.png')
+pygame.display.set_icon(icon)
+
+playerImg = pygame.image.load('beeman.png')
+playerImg = pygame.transform.scale(playerImg, (64, 64))
+playerX = 370
+playerY = 480
+playerX_change = 0
+num_of_enemies = 3
+
+# Transition to From Hard to Boss Enemy:
+numberHardEnemy = 0
+
+# Enemy
+enemyImg = []
+enemyX = []
+enemyY = []
+enemyX_change = []
+enemyY_change = []
+
+# Health Stats
+endGame = False
+healthChances = 3
+healthX = 10
+healthY = 483
+
+# Boss Level
+bossEnemyImg = []
+bossEnemyX = []
+bossEnemyY = []
+bossEnemyX_change = []
+bossEnemyY_change = []
+
+bossHealth = 12
+
+# Boss Enemy scaling
+for i in range(1):
+    bossEnemyImg.append(pygame.transform.scale(pygame.image.load('queen.png'), (250, 250)))
+    bossEnemyX.append(250)
+    bossEnemyY.append(150)
+    bossEnemyX_change.append(4)
+    bossEnemyY_change.append(40)
+
+# Normal Enemy scaling
+for i in range(num_of_enemies):
+    enemyImg.append(pygame.transform.scale(pygame.image.load('mosquito.png'), (42, 42)))
+    enemyX.append(random.randint(0, 736))
+    enemyY.append(random.randint(50, 150))
+    enemyX_change.append(2)
+    enemyY_change.append(40)
+
+# Super Enemy
+superEnemyImg = []
+superEnemyX = []
+superEnemyY = []
+superEnemyX_change = []
+superEnemyY_change = []
+
+# large enemy
+easyEnemyImg = []
+easyEnemyX = []
+easyEnemyY = []
+easyEnemyX_change = []
+easyEnemyY_change = []
+num_easy_enemies = 3
+
+# Hard Mode Enemies
+queenEnemyImg = []
+queenEnemyX = []
+queenEnemyY = []
+queenEnemyX_change = []
+queenEnemyY_change = []
+num_queen_enemies = 4
+
+for i in range(num_queen_enemies):
+    queenEnemyImg.append(pygame.transform.scale(pygame.image.load('queen.png'), (35, 35)))
+    queenEnemyX.append(random.randint(0, 736))
+    queenEnemyY.append(random.randint(50, 150))
+    queenEnemyX_change.append(5)
+    queenEnemyY_change.append(40)
+
+# SuperEnemyy
+for i in range(2):
+    superEnemyImg.append(pygame.transform.scale(pygame.image.load('bee.png'), (25, 25)))
+    superEnemyX.append(random.randint(0, 736))
+    superEnemyY.append(random.randint(50, 150))
+    superEnemyX_change.append(5)
+    superEnemyY_change.append(40)
+
+# LargerEasyWave
+for i in range(3):
+    easyEnemyImg.append(pygame.transform.scale(pygame.image.load('wasp.png'), (48, 48)))
+    easyEnemyX.append(random.randint(0, 736))
+    easyEnemyY.append(random.randint(50, 150))
+    easyEnemyX_change.append(5)
+    easyEnemyY_change.append(40)
+
+#Bullet
+bulletImg = pygame.image.load('mosquitobullet.png')
+bulletImg = pygame.transform.scale(bulletImg, (32, 32))
+bulletX = 0
+bulletY = 480
+bulletX_change = 0
+bulletY_change = 5
+bullet_state = "ready"
+
+#Super Bullet:
+superBulletImg = pygame.image.load('superbullet.png')
+superBulletImg = pygame.transform.scale(superBulletImg, (200, 200))
+superBulletX = 0
+superBulletY = 480
+superBulletX_change = 0
+superBulletY_change = 40
+super_bullet_state = "ready"
+
+superAmountCollision = 2
+superShoot2 = 1
+
+# Score
+score_value = 0
+font = pygame.font.Font('freesansbold.ttf', 32)
+textX = 10
+textY = 10
+counter2 = 1
+
+# Bullet Accuracy
+bulletHit = 0
+bulletTotalShot = 0
+bulletPreCalculation = 0
+bulletCalculation = 0
+bulletFont = pygame.font.Font('freesansbold.ttf', 25)
+bulletTextX = 10
+bulletTextY = 50
+
+# GameLoseText
+over_font = pygame.font.Font('freesansbold.ttf', 64)
+gameOver = False
+
+# Game Win
+win_font = pygame.font.Font("freesansbold.ttf", 64)
+wonGame = False
+
+# Background
+forestBackground = pygame.image.load('backgroundimg.jpg')
+forestBackground = pygame.transform.scale(forestBackground, (800, 600))
+spaceX = 800
+spaceY = 600
+
+# Wave message
+waveFont = pygame.font.Font('freesansbold.ttf', 25)
+waveMessage = "Basic Mode "
+waveX = 10
+waveY = 85
+
+# Game Level Progress Text:
+coWaveX = 509
+coWaveY = 10
+waveCoMessage = ""
+coWaveFont = pygame.font.Font('freesansbold.ttf', 15)
+
+# Super Collision 2 easy enemy:
+super2X = 509
+super2Y = 30
+superEasyWave2 = ""
+superFont = pygame.font.Font('freesansbold.ttf', 17)
+
+superShoot2Counter = 2
+
+# Queen/Hard enemy text:
+super2message = ""
+
+
+bossFont = pygame.font.Font("freesansbold.ttf", 27)
+bossHealthMessage = ""
+bossX = 10
+bossY = 525
+
+
+sacrificeCooldown = 0     # frames until player can sacrifice again
+SACRIFICE_COOLDOWN_FRAMES = 60  # adjust for longer/shorter cooldown
+sacrificeHintFont = pygame.font.Font('freesansbold.ttf', 18)
+sacrificeStatusFont = pygame.font.Font('freesansbold.ttf', 20)
+
+def screen_begin():
+    startingFont = pygame.font.Font("freesansbold.ttf", 40)
+    startingMessage = startingFont.render("PRESS BACKSPACE TO BEGIN!", True, (255, 255, 255))
+    screen.blit(startingMessage, (100, 250))
+    pygame.display.update()
+
+def show_score(x, y):
+    score = font.render("Score: " + str(score_value), True, (255, 255, 255))
+    screen.blit(score, (x, y))
+
+def level_message(x, y):
+    wave = waveFont.render("Wave : " + str(waveMessage), True, (255, 255, 255))
+    screen.blit(wave, (x, y))
+
+def show_bullet_accuracy(x, y):
+    if wonGame != True or gameOver != True:
+        bulletAccuracy = bulletFont.render("Bullet Accuracy: " + str(bulletCalculation) + "%", True, (255, 255, 255))
+        screen.blit(bulletAccuracy, (x, y))
+
+def game_over_text():
+    over_text = over_font.render("GAME OVER", True, (255, 255, 255))
+    screen.blit(over_text, (230, 250))
+
+def player(x, y):
+    screen.blit(playerImg, (x, y))
+
+def enemy(x, y, i):
+    screen.blit(enemyImg[i], (x, y))
+
+def level_co_message(x, y):
+    wc = coWaveFont.render("Wave Status: " + (waveCoMessage), True, (255, 255, 255))
+    screen.blit(wc, (x, y))
+
+def hard_enemy_text(x, y):
+    global numberHardEnemy
+    if numberHardEnemy <= 4 and numberHardEnemy > 0:
+        super2message = f"REQUIRED SHOTS: {4 - numberHardEnemy} more!"
+        superb = superFont.render((super2message), True, (255, 255, 255))
+        screen.blit(superb, (super2X, super2Y))
+
+def final_boss(x, y, i):
+    screen.blit(bossEnemyImg[i], (x, y))
+
+def change_waves():
+    global healthChances, waveMessage, waveCoMessage, score_value, num_of_enemies, numberHardEnemy, num_queen_enemies, superAmountCollision
+
+    if score_value < 10:
+        waveMessage = "Basic Mode"
+        waveCoMessage = ""
+        num_of_enemies = 3
+        healthChances = 3
+    elif score_value >= 10 and score_value <= 25:
+        waveMessage = "Easy/Medium Mode"
+        waveCoMessage = "Wave Completed"
+        num_of_enemies = 5
+    elif score_value >= 25 and score_value <= 40 and numberHardEnemy < 4:
+        waveMessage = "Hard Mode"
+        waveCoMessage = "NO HEALTH CHANCES"
+        num_queen_enemies = 4
+    elif numberHardEnemy >= 4:
+        waveMessage = "Boss Level"
+        # note: keep coWaveFont global if you want to change it here; original changed locally
+        waveCoMessage = f"Fire Charges: 1 (Press R)"
+        num_of_enemies = 0
+        num_queen_enemies = 0
+
+def updating_super_collision():
+    global numberHardEnemy, waveCoMessage, superAmountCollision, superShoot2, counter2
+    waveCoMessage = f"Fire Charges: {counter2} (Press R)"
+
+# clear enemy helper functions
+def clear_enemies():
+    global enemyY, superEnemyY, easyEnemyY
+    enemyY = [-2000] * len(enemyY)
+    superEnemyY = [-2000] * len(superEnemyY)
+    easyEnemyY = [-2000] * len(easyEnemyY)
+
+def clear_queen_enemies():
+    global queenEnemyY
+    queenEnemyY = [-2000] * len(queenEnemyY)
+
+def clear_all_enemies():
+    global enemyY, queenEnemyY, superEnemyY, easyEnemyY, bossEnemyY
+    enemyY = [-5000] * len(enemyY)
+    superEnemyY = [-5000] * len(superEnemyY)
+    easyEnemyY = [-5000] * len(easyEnemyY)
+    queenEnemyY = [-5000] * len(queenEnemyY)
+    bossEnemyY = [-40000] * len(bossEnemyY)
+
+def health_of_boss(bossHealth, x, y):
+    bh = bossFont.render("Boss Health: " + str(bossHealth), True, (255, 255, 255))
+    screen.blit(bh, (x, y))
+
+# ======= FIXED function (was passing coordinates as color) =======
+def health_player_display(healthChances):
+    # Render the health text in white, then blit it at (healthX, healthY)
+    bh = bossFont.render("Player Health: " + str(healthChances), True, (255, 255, 255))
+    screen.blit(bh, (healthX, healthY))
+# =================================================================
+
+def you_won():
+    win_text = win_font.render("You Won!", True, (255, 255, 255))
+    screen.blit(win_text, (250, 250))
+
+def queen_enemy(x, y, i):
+    screen.blit(queenEnemyImg[i], (x, y))
+
+def super_enemy(x, y, i):
+    screen.blit(superEnemyImg[i], (x, y))
+
+def easy_enemy(x, y, i):
+    screen.blit(easyEnemyImg[i], (x, y))
+
+def background(x, y):
+    screen.blit(forestBackground, (x, y))
+
+def fire_bullet(x, y):
+    global bullet_state
+    bullet_state = "fire"
+    screen.blit(bulletImg, (x + 16, y + 10))
+
+def fire_super_bullet(x, y):  # only able to be used when fighting the boss or from sacrifice
+    global super_bullet_state, superBulletX, superAmountCollision, super_bullet_state2, superShoot2Counter, bulletTotalShot, superBulletY
+
+    if numberHardEnemy >= 4 and superAmountCollision > 0:
+        super_bullet_state = "fire"
+        superBulletX = playerX - 85
+        superBulletY = playerY
+        screen.blit(superBulletImg, (x + 16, y + 16))
+    else:
+        # If boss not active but super used (e.g., sacrifice), still fire a super bullet visually
+        if super_bullet_state != "fire":
+            super_bullet_state = "fire"
+            superBulletX = x - 85
+            superBulletY = y
+            screen.blit(superBulletImg, (superBulletX, superBulletY))
+
+def isCollision3(easyEnemyX, easyEnemyY, bullet, bulletY):
+    distance = math.sqrt(math.pow(easyEnemyX - bulletX, 2) + math.pow(easyEnemyY - bulletY, 2))
+    if distance < 27:
+        return True
+    else:
+        return False
+
+def isCollision(enemyX_loc, enemyY_loc, bulletX_loc, bulletY_loc):
+    distance = math.sqrt(math.pow(enemyX_loc - bulletX_loc, 2) + math.pow(enemyY_loc - bulletY_loc, 2))
+    if distance < 27:
+        return True
+    else:
+        return False
+
+def isCollision2(superEnemyX_loc, superEnemyY_loc, bulletX_loc, bulletY_loc):
+    distance = math.sqrt(math.pow(superEnemyX_loc - bulletX_loc, 2) + math.pow(superEnemyY_loc - bulletY_loc, 2))
+    if distance < 27:
+        return True
+    else:
+        return False
+
+def isCollision4(queenEnemyX_loc, queenEnemyY_loc, bulletX_loc, bulletY_loc):
+    distance = math.sqrt(math.pow(queenEnemyX_loc - bulletX_loc, 2) + math.pow(queenEnemyY_loc - bulletY_loc, 2))
+    if distance < 27:
+        return True
+    else:
+        return False
+
+def isCollision5(bossEnemyX_loc, bossEnemyY_loc, bulletX_loc, bulletY_loc):
+    distance = math.sqrt(math.pow(bossEnemyX_loc - bulletX_loc, 2) + math.pow(bossEnemyY_loc - bulletY_loc, 2))
+    # increased radius for boss because it's big
+    if distance < 250:
+        return True
+    else:
+        return False
+
+def isCollisionSuper(bossEnemyX_loc, bossEnemyY_loc, superBulletX_loc, superBulletY_loc):
+    global superAmountCollision, gameOver, wonGame
+    distance = math.sqrt(math.pow(bossEnemyX_loc - superBulletX_loc, 2) + math.pow(bossEnemyY_loc - superBulletY_loc, 2))
+    if distance < 125 and superAmountCollision <= 2 and superAmountCollision > 0 and gameOver != True and wonGame != True:
+        return True
+    else:
+        return False
+
+def show_sacrifice_hint():
+    # hint text and status
+    hint = sacrificeHintFont.render("Press F to Sacrifice 1 Health for Immediate Super Shot (Can't sacrifice when at 1 health)", True, (255, 255, 255))
+    screen.blit(hint, (10, 560))
+
+    global sacrificeCooldown
+    if sacrificeCooldown > 0:
+        status = sacrificeStatusFont.render(f"Sacrifice Cooldown: {sacrificeCooldown//1} frames", True, (255, 255, 255))
+    else:
+        status = sacrificeStatusFont.render("Sacrifice Ready (Press F)", True, (255, 255, 255))
+    screen.blit(status, (10, 530))
+
+# Game Loop
+running = True
+gameHasBegun = False
+
+while running:
+
+    if gameHasBegun != True:
+        screen_begin()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_BACKSPACE:
+                    gameHasBegun = True
+
+    else:
+        background(0, 0)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+
+            # Keydown events
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_LEFT or event.key == pygame.K_a:
+                    playerX_change = -3
+                if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
+                    playerX_change = 3
+
+                if event.key == pygame.K_SPACE:
+                    if bullet_state == "ready":
+                        bulletTotalShot += 1
+                        bulletX = playerX
+                        fire_bullet(bulletX, bulletY)
+
+                if event.key == pygame.K_r:
+                    if super_bullet_state == "ready" and superShoot2 > 0:
+                        bulletTotalShot += 1
+                        superShoot2 -= 1
+                        superBulletX = playerX
+                        fire_super_bullet(superBulletX, superBulletY)
+
+                # --- Sacrifice feature: Press F to sacrifice health for immediate super shot
+                if event.key == pygame.K_f:
+                    # can't sacrifice if at 1 health (prevent self-kill)
+                    if healthChances > 1 and sacrificeCooldown == 0 and super_bullet_state != "fire":
+                        healthChances -= 1
+                        # fire super bullet centered on player
+                        super_bullet_state = "fire"
+                        superBulletX = playerX - 85
+                        superBulletY = playerY
+                        # give a cooldown so player can't spam
+                        sacrificeCooldown = SACRIFICE_COOLDOWN_FRAMES
+                        # count this shot in totals (for accuracy display)
+                        bulletTotalShot += 1
+
+            # Keyup events
+            if event.type == pygame.KEYUP:
+                # stop horizontal movement when releasing left/right keys
+                if (event.key == pygame.K_LEFT or event.key == pygame.K_a) and playerX_change < 0:
+                    playerX_change = 0
+                if (event.key == pygame.K_RIGHT or event.key == pygame.K_d) and playerX_change > 0:
+                    playerX_change = 0
+
+        # Checking for boundaries so player doesn't go out of bounds
+        playerX += playerX_change
+        if playerX <= 0:
+            playerX = 0
+        elif playerX >= 736:
+            playerX = 736
+
+        # Enemy Movement (basic enemies)
+        for i in range(len(enemyY)):
+            health_player_display(healthChances)
+
+            # Health Bar decrease by 1 if enemy reaches bottom line
+            if enemyY[i] >= 400:
+                healthChances -= 1
+                health_player_display(healthChances)
+                if healthChances <= 0:
+                    gameOver = True
+                    game_over_text()
+                    clear_all_enemies()
+                    break
+
+            enemyX[i] += enemyX_change[i]
+            if enemyX[i] <= 0:
+                enemyX_change[i] = 2.75
+                enemyY[i] += enemyY_change[i]
+            elif enemyX[i] >= 736:
+                enemyX_change[i] = -2.75
+                enemyY[i] += enemyY_change[i]
+
+            # Collision
+            collision = isCollision(enemyX[i], enemyY[i], bulletX, bulletY)
+            if collision:
+                bulletHit += 1
+                bulletY = 480
+                bullet_state = "ready"
+                score_value = score_value + 1
+                enemyX[i] = random.randint(0, 736)
+                enemyY[i] = random.randint(50, 150)
+            enemy(enemyX[i], enemyY[i], i)
+
+        # Super Enemy Movement (part of basic wave)
+        for i in range(2):
+            # ensure indices exist (in case lists were modified)
+            if i >= len(superEnemyY):
+                continue
+
+            health_player_display(healthChances)
+
+            # Health Bar decrease by 1
+            if superEnemyY[i] > 400:
+                healthChances -= 1
+                health_player_display(healthChances)
+                if healthChances <= 0:
+                    game_over_text()
+                    clear_all_enemies()
+                    gameOver = True
+                    break
+
+            superEnemyX[i] += superEnemyX_change[i]
+
+            if superEnemyX[i] <= 74:
+                superEnemyX_change[i] = 3
+                superEnemyY[i] += superEnemyY_change[i]
+            elif superEnemyX[i] >= 648:
+                superEnemyX_change[i] = -3
+                superEnemyY[i] += superEnemyY_change[i]
+
+            # Collision
+            superCollision = isCollision2(superEnemyX[i], superEnemyY[i], bulletX, bulletY)
+            if superCollision:
+                bulletHit += 1
+                bulletY = 480
+                bullet_state = "ready"
+                score_value = score_value + 2  # worth 2 points if you hit a Super Enemy!
+                superEnemyX[i] = random.randint(45, 700)
+                superEnemyY[i] = random.randint(50, 200)
+            super_enemy(superEnemyX[i], superEnemyY[i], i)
+
+            change_waves()
+            level_co_message(coWaveX, coWaveY)
+            level_message(waveX, waveY)
+
+        # Wave 2 - Easy/Medium Enemy Code
+        if score_value >= 10 and score_value <= 25:
+            healthChances = 3
+            num_of_enemies = 3
+            num_easy_enemies = 3
+
+            for i in range(len(easyEnemyY)):
+                health_player_display(healthChances)
+
+                # Health Bar Decrease for a Hit
+                if easyEnemyY[i] > 450:
+                    healthChances -= 1
+                    health_player_display(healthChances)
+                    if healthChances <= 0:
+                        game_over_text()
+                        clear_all_enemies()
+                        gameOver = True
+                        break
+
+                easyEnemyX[i] += easyEnemyX_change[i]
+                if easyEnemyX[i] <= 0:
+                    easyEnemyX_change[i] = 2.75
+                    easyEnemyY[i] += easyEnemyY_change[i]
+                elif easyEnemyX[i] >= 736:
+                    easyEnemyX_change[i] = -2.75
+                    easyEnemyY[i] += easyEnemyY_change[i]
+
+                # Collision
+                easyCollision = isCollision3(easyEnemyX[i], easyEnemyY[i], bulletX, bulletY)
+                if easyCollision:
+                    bulletHit += 1
+                    bulletY = 480
+                    bullet_state = "ready"
+                    score_value = score_value + 1
+                    easyEnemyX[i] = random.randint(0, 736)
+                    easyEnemyY[i] = random.randint(50, 150)
+                easy_enemy(easyEnemyX[i], easyEnemyY[i], i)
+
+        # Hard Mode Wave
+        if score_value >= 25 and score_value <= 40:
+            hard_enemy_text(super2X, super2Y)
+
+            num_easy_enemies = 0
+            num_of_enemies = 0
+
+            clear_enemies()
+            change_waves()
+
+            level_message(waveX, waveY)
+            level_co_message(coWaveX, coWaveY)
+
+            healthChances = 1
+            health_player_display(healthChances)
+
+            for i in range(num_queen_enemies):
+                # Game Over
+                if queenEnemyY[i] > 450:
+                    healthChances = 0
+                    health_player_display(healthChances)
+                    clear_all_enemies()
+                    gameOver = True
+                    game_over_text()
+                    break
+
+                queenEnemyX[i] += queenEnemyX_change[i]
+                if queenEnemyX[i] <= 0:
+                    queenEnemyX_change[i] = 6
+                    queenEnemyY[i] += queenEnemyY_change[i]
+                elif queenEnemyX[i] >= 736:
+                    queenEnemyX_change[i] = -6
+                    queenEnemyY[i] += queenEnemyY_change[i]
+
+                # Collision
+                hardCollision = isCollision4(queenEnemyX[i], queenEnemyY[i], bulletX, bulletY)
+                if hardCollision:
+                    bulletHit += 1
+                    bulletY = 480
+                    bullet_state = "ready"
+                    score_value = score_value + 2
+                    numberHardEnemy += 1
+                    if numberHardEnemy >= 4:
+                        super2message = " "
+                        hard_enemy_text(super2X, super2Y)
+                        waveMessage = "BOSS LEVEL"
+                        level_message(waveX, waveY)
+                        waveCoMessage = ""
+                        level_co_message(coWaveX, coWaveY)
+                queen_enemy(queenEnemyX[i], queenEnemyY[i], i)
+
+        # Boss Level Wave
+        if score_value >= 40 or numberHardEnemy >= 4:
+            if wonGame == True or gameOver == True:
+                superBulletX = 2000
+                bulletY = -2000
+            clear_enemies()
+            clear_queen_enemies()
+
+            change_waves()
+
+            level_message(waveX, waveY)
+            level_co_message(coWaveX, coWaveY)
+
+            for i in range(1):
+                health_of_boss(bossHealth, bossX, bossY)
+
+                healthChances = 1
+                health_player_display(healthChances)
+
+                # Game Over
+                if bossEnemyY[i] > 250:
+                    healthChances -= 1
+                    health_player_display(healthChances)
+                    clear_all_enemies()
+                    game_over_text()
+                    gameOver = True
+                    break
+
+                bossEnemyX[i] += bossEnemyX_change[i]
+                if bossEnemyX[i] <= 215:
+                    bossEnemyX_change[i] = 3.5
+                    bossEnemyY[i] += bossEnemyY_change[i]
+                elif bossEnemyX[i] >= 555:
+                    bossEnemyX_change[i] = -3.5
+                    bossEnemyY[i] += bossEnemyY_change[i]
+
+                # Collision with normal bullets on boss
+                bossCollision = isCollision5(bossEnemyX[i], bossEnemyY[i], bulletX, bulletY)
+                if bossCollision:
+                    bulletHit += 1
+                    bossHealth -= 1
+                    health_of_boss(bossHealth, bossX, bossY)
+                    bulletY = 480
+                    bullet_state = "ready"
+                    score_value = score_value + 1
+                if bossHealth <= 0:
+                    clear_all_enemies()
+                    wonGame = True
+                    break
+
+                # Super bullet collision with boss
+                bossSuperCollision = isCollisionSuper(bossEnemyX[i], bossEnemyY[i], superBulletX, superBulletY)
+                if bossSuperCollision:
+                    bossHealth -= 1
+                    health_of_boss(bossHealth, bossX, bossY)
+                    bulletHit += 1
+                    bulletTotalShot += 1
+                    super_bullet_state = "ready"
+                    score_value = score_value + 2  # super bullet gives 2 points
+                if bossHealth <= 0:
+                    clear_all_enemies()
+                    wonGame = True
+
+                final_boss(bossEnemyX[i], bossEnemyY[i], i)
+
+        # Bullet Movement
+        if bulletY <= 0:
+            bulletY = 480
+            bullet_state = "ready"
+
+        if bullet_state == "fire":
+            fire_bullet(bulletX, bulletY)
+            bulletY -= bulletY_change
+
+        # Super Bullet Movement
+        if superBulletY <= -100 or superBulletY >= 1000:
+            # reset super bullet when off-screen
+            superBulletY = 800
+            super_bullet_state = "ready"
+            # (super_bullet_state2 was present commented out in original; keep as ready)
+            # super_bullet_state2 = "ready"
+
+        if super_bullet_state == "fire":
+            counter2 -= 1
+            updating_super_collision()
+            # Move the super bullet upward
+            fire_super_bullet(superBulletX, superBulletY)
+            superBulletY -= superBulletY_change
+
+        # Bullet Accuracy Calculation
+        if endGame == False:
+            if bulletTotalShot < 1 and bulletHit < 1:
+                bulletPreCalculation = 0 * 100
+                bulletCalculation = round(bulletPreCalculation, 2)
+            elif bulletTotalShot > 0 and bulletHit > 0:
+                bulletPreCalculation = (bulletHit / bulletTotalShot) * 100
+                bulletCalculation = round(bulletPreCalculation, 1)
+
+        # Sacrifice cooldown decrement (per frame)
+        if sacrificeCooldown > 0:
+            sacrificeCooldown -= 1
+            if sacrificeCooldown < 0:
+                sacrificeCooldown = 0
+
+        # Endgame display logic
+        if gameOver == True:
+            game_over_text()
+            endGame = True
+        elif wonGame == True:
+            you_won()
+            endGame = True
+
+    # Draw player and HUD regardless of pre-game
+    player(playerX, playerY)
+    level_message(waveX, waveY)
+    show_score(textX, textY)
+    show_bullet_accuracy(bulletTextX, bulletTextY)
+
+    # Show sacrifice hint/status only when game has begun and not ended
+    if gameHasBegun and not endGame:
+        show_sacrifice_hint()
+
+    pygame.display.update()
+
