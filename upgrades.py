@@ -3,10 +3,10 @@ import pygame
 
 UPGRADE_LIST = [
     'Sacrifice 1 life to make your lasers capable of hitting 2 aliens',
-    'Sacrifice 1 life to fire your lasers faster',
+    'Sacrifice 1 life to fire your lasers faster ',
     'Sacrifice 1 life to instantly clear all aliens (Press E after to gain super speed and rapid fire for the rest of the round!)',
-    'Upgrade 4',
-    'Upgrade 5'
+    'Does Nothing ',
+    'Does Nothing '
 ]
 
 class UpgradeCard:
@@ -16,8 +16,8 @@ class UpgradeCard:
 
     def draw(self, screen, font, x, y, width, height, number):
         rect = pygame.Rect(x, y, width, height)
-        pygame.draw.rect(screen, (40, 40, 80), rect, border_radius=16)
-        pygame.draw.rect(screen, (200, 200, 80), rect, 4, border_radius=16)
+        pygame.draw.rect(screen, (60, 40, 80), rect, border_radius=16)
+        pygame.draw.rect(screen, (180, 200, 80), rect, 4, border_radius=16)
         # Text wrapping for long descriptions
         def draw_wrapped_text(text, font, color, rect, surface, line_spacing=4):
             words = text.split(' ')

@@ -1,10 +1,15 @@
-import pygame, sys
+import pygame, sys , asyncio
 from player import Player
 import obstacle
 from upgrades import UpgradeCard, get_random_upgrades
 from alien import Alien, Extra
 from random import choice, randint
 from laser import Laser
+
+# Ensure screen size is defined before Game is instantiated
+screen_width = 1128
+screen_height = 752
+screen = pygame.display.set_mode((screen_width, screen_height))
  
 class Game:
 	def activate_super_speed(self):
@@ -281,76 +286,79 @@ class CRT:
 		self.tv.set_alpha(randint(75,90))
 		self.create_crt_lines()
 		screen.blit(self.tv,(0,0))
+async def main():
 
-if __name__ == '__main__':
-	pygame.init()
-	screen_width = 1128
-	screen_height = 752
-	screen = pygame.display.set_mode((screen_width,screen_height))
-	clock = pygame.time.Clock()
-	game = Game()
-	crt = CRT()
+	if __name__ == '__main__':
+		pygame.init()
+		screen_width = 1128
+		screen_height = 752
+		screen = pygame.display.set_mode((screen_width,screen_height))
+		clock = pygame.time.Clock()
+		game = Game()
+		crt = CRT()
 
-	ALIENLASER = pygame.USEREVENT + 1
-	pygame.time.set_timer(ALIENLASER,800)
+		ALIENLASER = pygame.USEREVENT + 1
+		pygame.time.set_timer(ALIENLASER,800)
 
-	while True:
-		# Activate super speed if E is pressed and ready
-		keys = pygame.key.get_pressed()
-		if hasattr(game, 'super_speed_ready') and game.super_speed_ready and keys[pygame.K_e]:
-			game.activate_super_speed()
-		for event in pygame.event.get():
-			if event.type == pygame.QUIT:
-				pygame.quit()
-				sys.exit()
-			if event.type == ALIENLASER:
-				game.alien_shoot()
-			
-			if game.round_transition and event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-				mouse_x, mouse_y = event.pos
-				card_width = 340
-				card_height = 170
-				spacing = 60
-				total_width = 3 * card_width + 2 * spacing
-				start_x = (screen_width - total_width) // 2
-				y = screen_height // 2 - card_height // 2
-				for i, card in enumerate(game.upgrade_cards):
-					x = start_x + i * (card_width + spacing)
-					rect = pygame.Rect(x, y, card_width, card_height)
-					if rect.collidepoint(mouse_x, mouse_y):
-						game.selected_upgrade = card
-						if 'lasers capable of hitting 2 aliens' in card.name:
-							if game.lives > 1:
-								game.lives -= 1
-							game.bullet_pierce = 2
-							game.player.sprite.laser_cooldown = 600
-						elif 'fire your lasers faster' in card.name:
-							if game.lives > 1:
-								game.lives -= 1
-							game.player.sprite.laser_cooldown = 300  # 50% faster
-							game.bullet_pierce = 1
-						elif 'instantly clear all aliens' in card.name:
-							if game.lives > 1:
-								game.lives -= 1
-							game.aliens.empty()
-							game.super_speed_ready = True
-						else:
-							game.bullet_pierce = 1
-							game.player.sprite.laser_cooldown = 600
-						game.reset_laser_pierce()
-						
-						screen.fill((30,30,30))
-						game.run()
-						crt.draw()
-						pygame.display.flip()
-						game.round_transition = False
-						game.show_round_screen = True
-						game.round_screen_timer = 2 * 60  
-						game.round_number += 1
-						break
+		while True:
+			# Activate super speed if E is pressed and ready
+			keys = pygame.key.get_pressed()
+			if hasattr(game, 'super_speed_ready') and game.super_speed_ready and keys[pygame.K_e]:
+				game.activate_super_speed()
+			for event in pygame.event.get():
+				if event.type == pygame.QUIT:
+					pygame.quit()
+					sys.exit()
+				if event.type == ALIENLASER:
+					game.alien_shoot()
+				
+				if game.round_transition and event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+					mouse_x, mouse_y = event.pos
+					card_width = 340
+					card_height = 170
+					spacing = 60
+					total_width = 3 * card_width + 2 * spacing
+					start_x = (screen_width - total_width) // 2
+					y = screen_height // 2 - card_height // 2
+					for i, card in enumerate(game.upgrade_cards):
+						x = start_x + i * (card_width + spacing)
+						rect = pygame.Rect(x, y, card_width, card_height)
+						if rect.collidepoint(mouse_x, mouse_y):
+							game.selected_upgrade = card
+							if 'lasers capable of hitting 2 aliens' in card.name:
+								if game.lives > 1:
+									game.lives -= 1
+								game.bullet_pierce = 2
+								game.player.sprite.laser_cooldown = 600
+							elif 'fire your lasers faster' in card.name:
+								if game.lives > 1:
+									game.lives -= 1
+								game.player.sprite.laser_cooldown = 300  # 50% faster
+								game.bullet_pierce = 1
+							elif 'instantly clear all aliens' in card.name:
+								if game.lives > 1:
+									game.lives -= 1
+								game.aliens.empty()
+								game.super_speed_ready = True
+							else:
+								game.bullet_pierce = 1
+								game.player.sprite.laser_cooldown = 600
+							game.reset_laser_pierce()
+							
+							screen.fill((30,30,30))
+							game.run()
+							crt.draw()
+							pygame.display.flip()
+							game.round_transition = False
+							game.show_round_screen = True
+							game.round_screen_timer = 2 * 60  
+							game.round_number += 1
+							break
 
-		screen.fill((30,30,30))
-		game.run()
-		crt.draw()
-		pygame.display.flip()
-		clock.tick(60)
+			screen.fill((30,30,30))
+			game.run()
+			crt.draw()
+			pygame.display.flip()
+			clock.tick(60)
+			await asyncio.sleep(0)
+asyncio.run(main())
