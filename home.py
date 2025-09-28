@@ -199,7 +199,7 @@ class Game:
 				self.show_round_screen = False
 				# Increase alien speed after first round
 				if self.round_number > 1:
-					self.alien_speed += 40
+					self.alien_speed += 2
 				self.aliens.empty()
 				self.alien_lasers.empty()
 				self.blocks.empty()
