@@ -1,13 +1,28 @@
 import pygame, sys
 from player import Player
 import obstacle
+from upgrades import UpgradeCard, get_random_upgrades
 from alien import Alien, Extra
 from random import choice, randint
 from laser import Laser
  
 class Game:
+	# For Upgrade 1: track which lasers have pierced already
+	def reset_laser_pierce(self):
+		# Set pierce_count for all current and future lasers
+		for laser in self.player.sprite.lasers:
+			laser.pierce_count = 0
+		# Patch Laser class update to always add pierce_count if missing
+		orig_update = getattr(self.player.sprite.lasers.__class__, 'update', None)
+		def patched_update(group_self, *args, **kwargs):
+			for laser in group_self:
+				if not hasattr(laser, 'pierce_count'):
+					laser.pierce_count = 0
+			if orig_update:
+				orig_update(group_self, *args, **kwargs)
+		self.player.sprite.lasers.update = patched_update.__get__(self.player.sprite.lasers)
 	def __init__(self):
-		self.round_transition = False
+		self.round_transition = False  # Start with gameplay, not upgrade selection
 		self.round_countdown = 0
 		self.round_number = 1
 		self.show_round_screen = False
@@ -17,7 +32,7 @@ class Game:
 		player_sprite = Player((screen_width / 2, screen_height), screen_width, 5)
 		self.player = pygame.sprite.GroupSingle(player_sprite)
 
-		self.lives = 4
+		self.lives = 3
 		self.live_surf = pygame.image.load('player.png').convert_alpha()
 		self.live_x_start_pos = screen_width - (self.live_surf.get_size()[0] * 2 + 20)
 		self.score = 0
@@ -38,6 +53,11 @@ class Game:
 
 		self.extra = pygame.sprite.GroupSingle()
 		self.extra_spawn_time = randint(40, 80)
+
+		self.upgrade_cards = []
+		self.selected_upgrade = None
+
+		self.bullet_pierce = 1  # Default: bullets hit 1 alien
 
 		# music = pygame.mixer.Sound('music.wav') -- i'm not sure we can use the music they made
 		# music.set_volume(0.2)
@@ -100,29 +120,34 @@ class Game:
 			self.extra_spawn_time = randint(400,800)
 
 	def collision_checks(self):
-
-		# player lasers are soooooooooo difficult to type
+		# Player lasers
 		if self.player.sprite.lasers:
 			for laser in self.player.sprite.lasers:
-				
-				if pygame.sprite.spritecollide(laser,self.blocks,True):
+				# Always set pierce_count and spawn_time for every laser, every frame
+				if not hasattr(laser, 'pierce_count') or laser.pierce_count is None:
+					laser.pierce_count = 0
+				if not hasattr(laser, 'spawn_time') or laser.spawn_time is None:
+					laser.spawn_time = pygame.time.get_ticks()
+				if pygame.sprite.spritecollide(laser, self.blocks, True):
 					laser.kill()
-					
-
-				
-				aliens_hit = pygame.sprite.spritecollide(laser,self.aliens,True)
+				# Alien collision with piercing logic
+				aliens_hit = pygame.sprite.spritecollide(laser, self.aliens, True)
 				if aliens_hit:
 					for alien in aliens_hit:
 						self.score += alien.value
-					laser.kill()
-					self.explosion_sound.play()
-
-				
-				if pygame.sprite.spritecollide(laser,self.extra,True):
+						self.explosion_sound.play()
+						laser.pierce_count += 1
+						if laser.pierce_count >= self.bullet_pierce:
+							laser.kill()
+							break
+				elif pygame.sprite.spritecollide(laser, self.extra, True):
 					self.score += 500
 					laser.kill()
+				# For Upgrade 1: despawn after 8 seconds if not already killed
+				if self.bullet_pierce == 2 and hasattr(laser, 'spawn_time'):
+					if pygame.time.get_ticks() - laser.spawn_time > 8000:
+						laser.kill()
 
-		
 		if self.alien_lasers:
 			for laser in self.alien_lasers:
 				if pygame.sprite.spritecollide(laser, self.blocks, True):
@@ -160,6 +185,7 @@ class Game:
 		screen.blit(score_surf, score_rect)
 
 	def victory_message(self):
+		# Only trigger after round 1 and later
 		if not self.aliens.sprites() and not self.round_transition and not self.show_round_screen:
 			if not hasattr(self, 'wave_passed_timer') or self.wave_passed_timer is None:
 				self.wave_passed_timer = 5 * 60  # 5 seconds at 60 FPS
@@ -171,11 +197,18 @@ class Game:
 			else:
 				self.wave_passed_timer = None
 				self.round_transition = True
-				self.round_countdown = 30 * 60  # 30 seconds at 60 FPS
-	def draw_countdown(self):
-		seconds = self.round_countdown // 60
-		countdown_surf = self.font.render(f'{seconds}', True, 'white')
-		screen.blit(countdown_surf, (screen_width - countdown_surf.get_width() - 20, 20))
+				self.upgrade_cards = get_random_upgrades(3)
+				self.selected_upgrade = None
+	def draw_upgrade_cards(self):
+		card_width = 340  # Increased width
+		card_height = 170  # Increased height
+		spacing = 60
+		total_width = 3 * card_width + 2 * spacing
+		start_x = (screen_width - total_width) // 2
+		y = screen_height // 2 - card_height // 2
+		for i, card in enumerate(self.upgrade_cards):
+			x = start_x + i * (card_width + spacing)
+			card.draw(screen, self.font, x, y, card_width, card_height, i+1)
 
 	def draw_round_screen(self):
 		round_surf = self.font.render(f'Round {self.round_number}', True, 'yellow')
@@ -183,21 +216,16 @@ class Game:
 
 	def run(self):
 		if self.round_transition:
-			screen.fill((0, 0, 0))
-			self.draw_countdown()
-			self.round_countdown -= 1
-			if self.round_countdown <= 0:
-				self.round_transition = False
-				self.show_round_screen = True
-				self.round_screen_timer = 120  
-				self.round_number += 1
+			screen.fill((20, 20, 40))
+			self.draw_upgrade_cards()
+			instr = self.font.render('Choose an upgrade: Click a card', True, 'yellow')
+			screen.blit(instr, (screen_width // 2 - instr.get_width() // 2, 100))
 		elif self.show_round_screen:
 			screen.fill((0, 0, 0))
 			self.draw_round_screen()
 			self.round_screen_timer -= 1
 			if self.round_screen_timer <= 0:
 				self.show_round_screen = False
-				# Increase alien speed after first round
 				if self.round_number > 1:
 					self.alien_speed += 1
 				self.aliens.empty()
@@ -205,6 +233,8 @@ class Game:
 				self.blocks.empty()
 				self.alien_setup(rows=6, cols=8)
 				self.create_multiple_obstacles(*self.obstacle_x_positions, x_start=screen_width / 15, y_start=480)
+				self.upgrade_cards = []
+				self.selected_upgrade = None
 		elif not self.game_over and self.aliens:
 			self.player.update()
 			self.alien_lasers.update()
@@ -272,10 +302,41 @@ if __name__ == '__main__':
 				sys.exit()
 			if event.type == ALIENLASER:
 				game.alien_shoot()
+			# Handle upgrade card click
+			if game.round_transition and event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+				mouse_x, mouse_y = event.pos
+				card_width = 340
+				card_height = 170
+				spacing = 60
+				total_width = 3 * card_width + 2 * spacing
+				start_x = (screen_width - total_width) // 2
+				y = screen_height // 2 - card_height // 2
+				for i, card in enumerate(game.upgrade_cards):
+					x = start_x + i * (card_width + spacing)
+					rect = pygame.Rect(x, y, card_width, card_height)
+					if rect.collidepoint(mouse_x, mouse_y):
+						game.selected_upgrade = card
+						# Apply Upgrade 1 effect if selected (match by description substring)
+						if 'lasers capable of hitting 2 aliens' in card.name:
+							if game.lives > 1:
+								game.lives -= 1
+							game.bullet_pierce = 2
+						else:
+							game.bullet_pierce = 1
+						game.reset_laser_pierce()
+						# Redraw immediately to show lost life
+						screen.fill((30,30,30))
+						game.run()
+						crt.draw()
+						pygame.display.flip()
+						game.round_transition = False
+						game.show_round_screen = True
+						game.round_screen_timer = 2 * 60  # 2 seconds
+						game.round_number += 1
+						break
 
 		screen.fill((30,30,30))
 		game.run()
 		crt.draw()
-			
 		pygame.display.flip()
 		clock.tick(60)
