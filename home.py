@@ -17,6 +17,7 @@ class Game:
 		self.live_x_start_pos = screen_width - (self.live_surf.get_size()[0] * 2 + 20)
 		self.score = 0
 		self.font = pygame.font.Font(None, 32)
+		self.game_over = False
 
 		self.shape = obstacle.shape
 		self.block_size = 6
@@ -25,17 +26,14 @@ class Game:
 		self.obstacle_x_positions = [num * (screen_width / self.obstacle_amount) for num in range(self.obstacle_amount)]
 		self.create_multiple_obstacles(*self.obstacle_x_positions, x_start=screen_width / 15, y_start=480)
 
-		
 		self.aliens = pygame.sprite.Group()
 		self.alien_lasers = pygame.sprite.Group()
 		self.alien_setup(rows=6, cols=8)
 		self.alien_direction = 1
 
-		
 		self.extra = pygame.sprite.GroupSingle()
 		self.extra_spawn_time = randint(40, 80)
 
-		
 		# music = pygame.mixer.Sound('music.wav') -- i'm not sure we can use the music they made
 		# music.set_volume(0.2)
 		# music.play(loops = -1)
@@ -122,25 +120,29 @@ class Game:
 		
 		if self.alien_lasers:
 			for laser in self.alien_lasers:
-				
-				if pygame.sprite.spritecollide(laser,self.blocks,True):
+				if pygame.sprite.spritecollide(laser, self.blocks, True):
 					laser.kill()
 
-				if pygame.sprite.spritecollide(laser,self.player,False):
+				if pygame.sprite.spritecollide(laser, self.player, False):
 					laser.kill()
 					self.lives -= 1
 					if self.lives <= 0:
-						pygame.quit()
-						sys.exit()
+						self.game_over = True
 
 		
 		if self.aliens:
 			for alien in self.aliens:
-				pygame.sprite.spritecollide(alien,self.blocks,True)
+				pygame.sprite.spritecollide(alien, self.blocks, True)
 
-				if pygame.sprite.spritecollide(alien,self.player,False):
-					pygame.quit()
-					sys.exit()
+				if pygame.sprite.spritecollide(alien, self.player, False):
+					self.game_over = True
+	def game_over_message(self):
+		if self.game_over:
+			pygame.mixer.stop()
+			screen.fill((30, 30, 30))
+			over_surf = self.font.render('Game Over', False, 'red')
+			over_rect = over_surf.get_rect(center=(screen_width / 2, screen_height / 2))
+			screen.blit(over_surf, over_rect)
 	
 	def display_lives(self):
 		for live in range(self.lives - 1):
@@ -159,15 +161,15 @@ class Game:
 			screen.blit(victory_surf, victory_rect)
 
 	def run(self):
-		self.player.update()
-		self.alien_lasers.update()
-		self.extra.update()
-		
-		self.aliens.update(self.alien_direction)
-		self.alien_position_checker()
-		self.extra_alien_timer()
-		self.collision_checks()
-		
+		if not self.game_over and self.aliens:
+			self.player.update()
+			self.alien_lasers.update()
+			self.extra.update()
+			self.aliens.update(self.alien_direction)
+			self.alien_position_checker()
+			self.extra_alien_timer()
+			self.collision_checks()
+
 		self.player.sprite.lasers.draw(screen)
 		self.player.draw(screen)
 		self.blocks.draw(screen)
@@ -177,6 +179,7 @@ class Game:
 		self.display_lives()
 		self.display_score()
 		self.victory_message()
+		self.game_over_message()
 
 class CRT:
 	def __init__(self):
@@ -197,8 +200,8 @@ class CRT:
 
 if __name__ == '__main__':
 	pygame.init()
-	screen_width = 600
-	screen_height = 600
+	screen_width = 1128
+	screen_height = 752
 	screen = pygame.display.set_mode((screen_width,screen_height))
 	clock = pygame.time.Clock()
 	game = Game()
