@@ -291,7 +291,6 @@ def health_of_boss(bossHealth, x, y):
     bh = bossFont.render("Boss Health: " + str(bossHealth), True, (255, 255, 255))
     screen.blit(bh, (x, y))
 
-# ======= FIXED function (was passing coordinates as color) =======
 def health_player_display(healthChances):
     # Render the health text in white, then blit it at (healthX, healthY)
     bh = bossFont.render("Player Health: " + str(healthChances), True, (255, 255, 255))
