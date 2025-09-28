@@ -7,6 +7,10 @@ from random import choice, randint
 from laser import Laser
  
 class Game:
+	def activate_super_speed(self):
+		self.player.sprite.speed *= 2
+		self.player.sprite.laser_cooldown = 60
+		self.super_speed_ready = False
 	
 	def reset_laser_pierce(self):
 		
@@ -26,6 +30,7 @@ class Game:
 		self.show_round_screen = False
 		self.round_screen_timer = 0
 		self.alien_speed = 1
+		self.super_speed_ready = False
 
 		player_sprite = Player((screen_width / 2, screen_height), screen_width, 5)
 		self.player = pygame.sprite.GroupSingle(player_sprite)
@@ -290,6 +295,10 @@ if __name__ == '__main__':
 	pygame.time.set_timer(ALIENLASER,800)
 
 	while True:
+		# Activate super speed if E is pressed and ready
+		keys = pygame.key.get_pressed()
+		if hasattr(game, 'super_speed_ready') and game.super_speed_ready and keys[pygame.K_e]:
+			game.activate_super_speed()
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
 				pygame.quit()
@@ -310,7 +319,6 @@ if __name__ == '__main__':
 					rect = pygame.Rect(x, y, card_width, card_height)
 					if rect.collidepoint(mouse_x, mouse_y):
 						game.selected_upgrade = card
-						
 						if 'lasers capable of hitting 2 aliens' in card.name:
 							if game.lives > 1:
 								game.lives -= 1
@@ -321,6 +329,11 @@ if __name__ == '__main__':
 								game.lives -= 1
 							game.player.sprite.laser_cooldown = 300  # 50% faster
 							game.bullet_pierce = 1
+						elif 'instantly clear all aliens' in card.name:
+							if game.lives > 1:
+								game.lives -= 1
+							game.aliens.empty()
+							game.super_speed_ready = True
 						else:
 							game.bullet_pierce = 1
 							game.player.sprite.laser_cooldown = 600
