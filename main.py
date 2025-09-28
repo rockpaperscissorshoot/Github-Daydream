@@ -7,12 +7,11 @@ from random import choice, randint
 from laser import Laser
  
 class Game:
-	# For Upgrade 1: track which lasers have pierced already
+	
 	def reset_laser_pierce(self):
-		# Set pierce_count for all current and future lasers
+		
 		for laser in self.player.sprite.lasers:
 			laser.pierce_count = 0
-		# Patch Laser class update to always add pierce_count if missing
 		orig_update = getattr(self.player.sprite.lasers.__class__, 'update', None)
 		def patched_update(group_self, *args, **kwargs):
 			for laser in group_self:
